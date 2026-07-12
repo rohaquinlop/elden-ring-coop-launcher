@@ -30,6 +30,8 @@ uv sync --locked       # fail if lockfile is out of date
 uv run <command>       # run in project venv
 ```
 
+The project requires `[build-system]` (hatchling) and `[tool.hatch.build.targets.wheel]` in pyproject.toml. Without them, uv skips creating the `coop-launcher` entry point script, causing "no such file or directory" errors.
+
 ## Architecture
 
 Single package: `launcher/`. Entry point is `launcher.cli:main` (registered as `coop-launcher` script in pyproject.toml).
