@@ -43,7 +43,7 @@ Single package: `launcher/`. Entry point is `launcher.cli:main` (registered as `
 | `me3_manager.py` | Downloads me3 binaries from GitHub. Linux: tar.gz → `~/.local/share/me3` + symlink to `~/.local/bin/me3`. Windows: zip → `%LOCALAPPDATA%\me3`. |
 | `mod_manager.py` | Downloads Seamless Co-op zip from GitHub releases. Extracts to `<game>/Game/SeamlessCoop/`. Writes `VERSION` file. |
 | `profile.py` | Generates `.me3` TOML profile pointing to `ersc.dll`. |
-| `config.py` | Reads/writes `ersc_settings.ini` (password, game rules). |
+| `config.py` | Reads/writes `ersc_settings.ini` (password). Uses `[PASSWORD]` section — same as the mod. |
 | `game.py` | Runs `me3 launch -p <profile>`. |
 | `cli.py` | argparse CLI. All commands are `cmd_*` functions. |
 
@@ -62,4 +62,4 @@ Single package: `launcher/`. Entry point is `launcher.cli:main` (registered as `
 - Python 3.10+ minimum (uses `str | None` union syntax, `from __future__ import annotations`).
 - No type stubs for `vdf` — it's untyped.
 - `_download_file` is duplicated in `me3_manager.py` and `mod_manager.py` (intentional for now — small codebase).
-- `config.py` `ModSettings` defaults: `allow_invaders=1`, `death_debuffs=1`, `overhead_player_display=1`, `skip_splash_screens=1`.
+- `config.py` `ModSettings` only manages the password (`[PASSWORD] cooppassword`). All other settings are left untouched. Uses `RawConfigParser` and targeted text replacement to preserve comments on save.
