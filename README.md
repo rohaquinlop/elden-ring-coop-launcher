@@ -14,6 +14,9 @@ This tool automates the setup and management of:
 # First-time setup (interactive wizard)
 uv run coop-launcher setup
 
+# With a local mod zip (e.g. downloaded from NexusMods)
+uv run coop-launcher setup --mod-file ~/Downloads/Seamless.Co-op.zip
+
 # Launch the game
 uv run coop-launcher launch
 
@@ -41,10 +44,10 @@ uv run coop-launcher --help
 
 | Command | Description |
 |---------|-------------|
-| `uv run coop-launcher setup` | Interactive first-time setup wizard |
+| `uv run coop-launcher setup [--mod-file <zip>]` | Interactive first-time setup wizard |
 | `uv run coop-launcher launch` | Launch game with Seamless Co-op |
-| `uv run coop-launcher run` | Setup if needed, then launch |
-| `uv run coop-launcher update [--me3] [--mod]` | Update me3 and/or the mod |
+| `uv run coop-launcher run [--mod-file <zip>]` | Setup if needed, then launch |
+| `uv run coop-launcher update [--me3] [--mod] [--mod-file <zip>]` | Update me3 and/or the mod |
 | `uv run coop-launcher config show` | Show current configuration |
 | `uv run coop-launcher config password [value]` | Get/set co-op password |
 | `uv run coop-launcher config set <section> <key> <value>` | Set arbitrary config value |
@@ -54,7 +57,7 @@ uv run coop-launcher --help
 
 1. **Platform detection**: Finds your Elden Ring installation via Steam library folders
 2. **me3 management**: Downloads and installs [me3](https://github.com/garyttierney/me3), the open-source mod loader that supports Linux via Proton
-3. **Mod management**: Downloads Seamless Co-op from GitHub releases
+3. **Mod management**: Downloads Seamless Co-op from GitHub releases, or installs from a local zip file via `--mod-file`
 4. **Profile generation**: Creates a `.me3` TOML profile that tells me3 to load `ersc.dll`
 5. **Game launch**: Invokes `me3 launch -p seamless-coop.me3` to start the game with the mod
 
@@ -83,12 +86,8 @@ Just make sure everyone:
 The mod settings are stored in `ersc_settings.ini` inside the SeamlessCoop directory:
 
 ```ini
-[session]
+[PASSWORD]
 cooppassword = your_password_here
-allow_invaders = 1
-death_debuffs = 1
-overhead_player_display = 1
-skip_splash_screens = 1
 ```
 
 ## Dependencies

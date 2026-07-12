@@ -13,8 +13,10 @@ uv sync                      # install deps from lockfile
 uv run coop-launcher --help
 uv run coop-launcher status
 uv run coop-launcher setup   # interactive wizard
+uv run coop-launcher setup --mod-file <path>  # use local zip
 uv run coop-launcher launch
 uv run coop-launcher run     # auto-setup + launch
+uv run coop-launcher update --mod-file <path> # update from local zip
 ```
 
 No test suite exists yet. No lint/typecheck commands configured.
@@ -41,7 +43,7 @@ Single package: `launcher/`. Entry point is `launcher.cli:main` (registered as `
 | `constants.py` | GitHub repo names, paths, platform flags. Platform-specific paths computed at import time. |
 | `platform_detect.py` | Finds Elden Ring via Steam `libraryfolders.vdf` parsing. Uses `vdf` library. |
 | `me3_manager.py` | Downloads me3 binaries from GitHub. Linux: tar.gz → `~/.local/share/me3` + symlink to `~/.local/bin/me3`. Windows: zip → `%LOCALAPPDATA%\me3`. |
-| `mod_manager.py` | Downloads Seamless Co-op zip from GitHub releases. Extracts to `<game>/Game/SeamlessCoop/`. Writes `VERSION` file. |
+| `mod_manager.py` | Downloads Seamless Co-op zip from GitHub releases. Extracts to `<game>/Game/SeamlessCoop/`. Writes `VERSION` file. Supports local zip via `install_mod_from_file()` / `update_mod_from_file()`. |
 | `profile.py` | Generates `.me3` TOML profile pointing to `ersc.dll`. |
 | `config.py` | Reads/writes `ersc_settings.ini` (password). Uses `[PASSWORD]` section — same as the mod. |
 | `game.py` | Runs `me3 launch -p <profile>`. |
