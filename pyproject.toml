@@ -1,0 +1,14 @@
+[project]
+name = "elden-ring-coop-launcher"
+version = "0.1.0"
+description = "Cross-platform launcher for Elden Ring Seamless Co-op (Windows & Linux)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.34.2",
+    "tqdm>=4.68.4",
+    "vdf>=3.4",
+]
+
+[project.scripts]
+coop-launcher = "launcher.cli:main"
