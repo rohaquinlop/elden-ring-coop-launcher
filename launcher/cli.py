@@ -12,6 +12,7 @@ from .constants import ME3_PROFILES_DIR, MOD_DLL, MOD_SETTINGS
 from .game import launch_game
 from .me3_manager import (
     ensure_me3_installed,
+    find_me3_binary,
     get_installed_me3_version,
     get_latest_me3_release,
     install_me3,
@@ -147,11 +148,12 @@ def cmd_launch(args: argparse.Namespace) -> int:
         print("ERROR: Elden Ring installation not found!")
         return 1
 
-    # Ensure me3 is installed
-    if not info.me3_installed:
+    # Ensure me3 is installed and get its path
+    me3_path = find_me3_binary()
+    if not me3_path:
         print("me3 not found. Installing...")
         try:
-            install_me3()
+            me3_path = install_me3()
         except Exception as e:
             print(f"ERROR: Could not install me3: {e}")
             return 1
@@ -189,7 +191,7 @@ def cmd_launch(args: argparse.Namespace) -> int:
     if getattr(args, "disable_arxan", False):
         extra_args.append("--disable-arxan")
 
-    return launch_game(profile_path, extra_args)
+    return launch_game(profile_path, extra_args, me3_path=me3_path)
 
 
 def cmd_update(args: argparse.Namespace) -> int:

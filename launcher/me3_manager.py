@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import io
 import os
 import pathlib
+import shutil
 import stat
 import subprocess
 import tarfile
@@ -24,11 +24,37 @@ def get_latest_me3_release() -> dict:
     return resp.json()
 
 
+def find_me3_binary() -> pathlib.Path | None:
+    """Find me3 binary. Checks PATH first, then known install locations."""
+    # Check PATH
+    path = shutil.which("me3")
+    if path:
+        return pathlib.Path(path)
+
+    # Fallback: known install locations
+    candidates: list[pathlib.Path] = []
+    if IS_LINUX:
+        candidates.append(pathlib.Path.home() / ".local" / "bin" / "me3")
+    elif IS_WINDOWS:
+        local_app_data = os.environ.get("LOCALAPPDATA", "")
+        if local_app_data:
+            candidates.append(pathlib.Path(local_app_data) / "me3" / "me3.exe")
+
+    for c in candidates:
+        if c.exists() and c.is_file():
+            return c
+
+    return None
+
+
 def get_installed_me3_version() -> str | None:
     """Get the currently installed me3 version."""
+    me3_bin = find_me3_binary()
+    if not me3_bin:
+        return None
     try:
         result = subprocess.run(
-            ["me3", "--version"],
+            [str(me3_bin), "--version"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -114,6 +140,8 @@ def install_me3_linux(release: dict) -> pathlib.Path:
     archive_path.unlink(missing_ok=True)
     download_dir.rmdir()
 
+    _warn_path_if_needed(me3_bin)
+
     return me3_bin
 
 
@@ -185,11 +213,10 @@ def install_me3() -> pathlib.Path:
 
 
 def ensure_me3_installed() -> pathlib.Path:
-    """Ensure me3 is installed, installing if necessary."""
-    from shutil import which
-    me3_path = which("me3")
+    """Ensure me3 is installed, installing if necessary. Returns path to binary."""
+    me3_path = find_me3_binary()
     if me3_path:
-        return pathlib.Path(me3_path)
+        return me3_path
     return install_me3()
 
 
@@ -204,3 +231,15 @@ def update_me3() -> str | None:
 
     install_me3()
     return latest
+
+
+def _warn_path_if_needed(me3_bin: pathlib.Path) -> None:
+    """Warn if ~/.local/bin is not on PATH (Linux)."""
+    if not IS_LINUX:
+        return
+    local_bin = str(pathlib.Path.home() / ".local" / "bin")
+    path_env = os.environ.get("PATH", "")
+    if local_bin not in path_env.split(":"):
+        print(f"  NOTE: {local_bin} is not on your PATH.")
+        print(f"  me3 binary is at: {me3_bin}")
+        print(f"  Add to your shell profile: export PATH=\"$HOME/.local/bin:$PATH\"")

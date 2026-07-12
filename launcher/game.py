@@ -12,17 +12,20 @@ from .constants import ELDEN_RING_APP_ID_STR, IS_LINUX
 def launch_game(
     profile_path: pathlib.Path,
     extra_args: list[str] | None = None,
+    me3_path: pathlib.Path | None = None,
 ) -> int:
     """Launch Elden Ring with Seamless Co-op via me3.
 
     Args:
         profile_path: Path to the .me3 profile file.
         extra_args: Additional arguments to pass to me3.
+        me3_path: Full path to the me3 binary. If None, falls back to "me3" on PATH.
 
     Returns:
         Process exit code.
     """
-    cmd = ["me3", "launch", "-p", str(profile_path)]
+    me3_cmd = str(me3_path) if me3_path else "me3"
+    cmd = [me3_cmd, "launch", "-p", str(profile_path)]
     if extra_args:
         cmd.extend(extra_args)
 

@@ -117,13 +117,16 @@ def get_mod_dir() -> Optional[pathlib.Path]:
 
 
 def check_me3_installed() -> bool:
-    """Check if me3 is available on PATH."""
-    return shutil.which("me3") is not None
+    """Check if me3 is available (on PATH or at known install location)."""
+    from .me3_manager import find_me3_binary
+    return find_me3_binary() is not None
 
 
 def get_me3_binary_path() -> Optional[str]:
     """Get the path to the me3 binary."""
-    return shutil.which("me3")
+    from .me3_manager import find_me3_binary
+    p = find_me3_binary()
+    return str(p) if p else None
 
 
 class PlatformInfo:
