@@ -26,16 +26,15 @@ coop-launcher run
 Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-# Clone and install
-git clone <this-repo>
-cd elden-ring-seamless-coop-multi-os
-uv pip install -e .
+git clone https://github.com/rohaquinlop/elden-ring-coop-launcher.git
+cd elden-ring-coop-launcher
+uv sync
 ```
 
-Or run directly without installing:
+Run via the entry point (works after `uv sync`):
 
 ```bash
-uv run python -m launcher --help
+uv run coop-launcher --help
 ```
 
 ## Commands

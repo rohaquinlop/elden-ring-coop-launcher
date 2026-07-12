@@ -9,15 +9,12 @@ The mod itself (`ersc.dll`) is closed-source. This project does NOT contain or m
 ## Commands
 
 ```bash
-# Run the CLI without installing (preferred during development)
-uv run python -m launcher --help
-uv run python -m launcher status
-uv run python -m launcher setup    # interactive wizard
-uv run python -m launcher launch
-uv run python -m launcher run      # auto-setup + launch
-
-# After `uv pip install -e .`
-coop-launcher --help
+uv sync                      # install deps from lockfile
+uv run coop-launcher --help
+uv run coop-launcher status
+uv run coop-launcher setup   # interactive wizard
+uv run coop-launcher launch
+uv run coop-launcher run     # auto-setup + launch
 ```
 
 No test suite exists yet. No lint/typecheck commands configured.
@@ -28,8 +25,9 @@ This project uses **uv**, not pip. Dependencies are in `pyproject.toml`, lockfil
 
 ```bash
 uv add <package>       # add dependency
+uv sync                # install from lockfile
+uv sync --locked       # fail if lockfile is out of date
 uv run <command>       # run in project venv
-uv pip install -e .    # install as editable (needed for entry point)
 ```
 
 ## Architecture
