@@ -206,8 +206,8 @@ def update_mod_from_file(zip_path: pathlib.Path, mod_dir: pathlib.Path) -> pathl
     # Extract new version
     extract_mod(zip_path, mod_dir)
 
-    # Restore settings if they were overwritten
-    if settings_backup and not settings_path.exists():
+    # Restore user settings (overwrite the default from the zip)
+    if settings_backup is not None:
         settings_path.write_bytes(settings_backup)
 
     return mod_dir
@@ -240,8 +240,8 @@ def update_mod(mod_dir: pathlib.Path) -> str | None:
     # Download new version
     download_mod(mod_dir)
 
-    # Restore settings
-    if settings_backup and not settings_path.exists():
+    # Restore user settings (overwrite the default from the zip)
+    if settings_backup is not None:
         settings_path.write_bytes(settings_backup)
 
     return latest
