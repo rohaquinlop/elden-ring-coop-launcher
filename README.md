@@ -12,13 +12,13 @@ This tool automates the setup and management of:
 
 ```bash
 # First-time setup (interactive wizard)
-coop-launcher setup
+uv run coop-launcher setup
 
 # Launch the game
-coop-launcher launch
+uv run coop-launcher launch
 
 # Or use "run" to auto-setup if needed, then launch
-coop-launcher run
+uv run coop-launcher run
 ```
 
 ## Installation
@@ -41,14 +41,14 @@ uv run coop-launcher --help
 
 | Command | Description |
 |---------|-------------|
-| `coop-launcher setup` | Interactive first-time setup wizard |
-| `coop-launcher launch` | Launch game with Seamless Co-op |
-| `coop-launcher run` | Setup if needed, then launch |
-| `coop-launcher update [--me3] [--mod]` | Update me3 and/or the mod |
-| `coop-launcher config show` | Show current configuration |
-| `coop-launcher config password [value]` | Get/set co-op password |
-| `coop-launcher config set <section> <key> <value>` | Set arbitrary config value |
-| `coop-launcher status` | Show current status and check for updates |
+| `uv run coop-launcher setup` | Interactive first-time setup wizard |
+| `uv run coop-launcher launch` | Launch game with Seamless Co-op |
+| `uv run coop-launcher run` | Setup if needed, then launch |
+| `uv run coop-launcher update [--me3] [--mod]` | Update me3 and/or the mod |
+| `uv run coop-launcher config show` | Show current configuration |
+| `uv run coop-launcher config password [value]` | Get/set co-op password |
+| `uv run coop-launcher config set <section> <key> <value>` | Set arbitrary config value |
+| `uv run coop-launcher status` | Show current status and check for updates |
 
 ## How It Works
 
