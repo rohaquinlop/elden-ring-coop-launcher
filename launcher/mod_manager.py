@@ -93,13 +93,12 @@ def download_mod(dest_dir: pathlib.Path) -> pathlib.Path:
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(dest_dir)
 
-    # The zip might contain a subdirectory; flatten if needed
-    extracted_items = list(dest_dir.iterdir())
-    if len(extracted_items) == 1 and extracted_items[0].is_dir():
-        subdir = extracted_items[0]
-        for item in subdir.iterdir():
+    # The zip may contain a SeamlessCoop/ subdirectory; flatten it
+    seamless_subdir = dest_dir / "SeamlessCoop"
+    if seamless_subdir.is_dir():
+        for item in seamless_subdir.iterdir():
             shutil.move(str(item), str(dest_dir / item.name))
-        subdir.rmdir()
+        seamless_subdir.rmdir()
 
     # Write version file
     version = release["tag_name"].lstrip("v")
