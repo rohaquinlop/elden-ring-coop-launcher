@@ -257,7 +257,7 @@ def cmd_config(args: argparse.Namespace) -> int:
         else:
             pw = settings.get_password()
             if pw:
-                print(f"Current password: {'*' * len(pw)}")
+                print(f"Current password: {pw}")
             else:
                 print("No password set.")
         return 0
@@ -302,7 +302,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     # Check for updates
     try:
         release = get_latest_me3_release()
-        latest_me3 = release["tag_name"].lstrip("v")
+        latest_me3 = release["tag_name"].removeprefix("v")
         if me3_ver and me3_ver != latest_me3:
             print(f"   Update available: v{latest_me3}")
     except Exception:
@@ -310,7 +310,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     try:
         release = get_latest_mod_release()
-        latest_mod = release["tag_name"].lstrip("v")
+        latest_mod = release["tag_name"].removeprefix("v")
         mod_ver = get_installed_mod_version(mod_dir) if mod_dir else None
         if mod_ver and mod_ver != latest_mod:
             print(f"   Mod update available: v{latest_mod}")

@@ -22,7 +22,7 @@ MOD_SAVE_EXT = ".co2"
 
 # --- me3 profile ---
 PROFILE_VERSION = "v1"
-PROFILE_SAVEFILE = "SeamlessCoop.sl2"
+PROFILE_SAVEFILE = "SeamlessCoop.co2"
 
 # --- Platform-specific paths ---
 IS_WINDOWS = sys.platform == "win32"
