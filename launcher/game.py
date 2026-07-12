@@ -43,8 +43,12 @@ def launch_game(
         print("\nInterrupted by user.")
         return 130
     except FileNotFoundError:
-        print("Error: 'me3' not found on PATH. Please install me3 first.")
-        print("  Run: coop-launcher setup")
+        if me3_path:
+            print(f"Error: me3 binary not found at: {me3_path}")
+            print("  Run: uv run coop-launcher setup")
+        else:
+            print("Error: 'me3' not found on PATH. Please install me3 first.")
+            print("  Run: uv run coop-launcher setup")
         return 1
 
 

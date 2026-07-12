@@ -7,7 +7,9 @@ import pathlib
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
+import tempfile
 import zipfile
 
 import requests
@@ -63,7 +65,7 @@ def get_installed_me3_version() -> str | None:
             # Output like "me3 0.11.0"
             parts = result.stdout.strip().split()
             if len(parts) >= 2:
-                return parts[-1].lstrip("v")
+                return parts[-1].removeprefix("v")
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
     return None
@@ -73,7 +75,10 @@ def _download_file(url: str, dest: pathlib.Path, desc: str = "Downloading") -> N
     """Download a file with progress bar."""
     resp = requests.get(url, stream=True, timeout=30)
     resp.raise_for_status()
-    total = int(resp.headers.get("content-length", 0))
+    try:
+        total = int(resp.headers.get("content-length", 0))
+    except (ValueError, TypeError):
+        total = 0
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     with open(dest, "wb") as f:
@@ -99,7 +104,7 @@ def install_me3_linux(release: dict) -> pathlib.Path:
         # Fallback: try the installer script
         return _install_me3_linux_script()
 
-    download_dir = pathlib.Path("/tmp") / "me3-install"
+    download_dir = pathlib.Path(tempfile.gettempdir()) / "me3-install"
     download_dir.mkdir(parents=True, exist_ok=True)
     archive_path = download_dir / asset["name"]
 
@@ -110,7 +115,11 @@ def install_me3_linux(release: dict) -> pathlib.Path:
     install_dir.mkdir(parents=True, exist_ok=True)
 
     with tarfile.open(archive_path, "r:gz") as tar:
-        tar.extractall(path=install_dir, filter="data")
+        # filter="data" was added in Python 3.12
+        if sys.version_info >= (3, 12):
+            tar.extractall(path=install_dir, filter="data")
+        else:
+            tar.extractall(path=install_dir)
 
     # Find the me3 binary and symlink to ~/.local/bin
     me3_bin = None
@@ -138,7 +147,7 @@ def install_me3_linux(release: dict) -> pathlib.Path:
 
     # Clean up
     archive_path.unlink(missing_ok=True)
-    download_dir.rmdir()
+    shutil.rmtree(download_dir, ignore_errors=True)
 
     _warn_path_if_needed(me3_bin)
 
@@ -172,7 +181,7 @@ def install_me3_windows(release: dict) -> pathlib.Path:
     if not asset:
         raise FileNotFoundError("Could not find Windows me3 release asset")
 
-    download_dir = pathlib.Path(os.environ.get("TEMP", "/tmp")) / "me3-install"
+    download_dir = pathlib.Path(tempfile.gettempdir()) / "me3-install"
     download_dir.mkdir(parents=True, exist_ok=True)
     archive_path = download_dir / asset["name"]
 
@@ -197,6 +206,7 @@ def install_me3_windows(release: dict) -> pathlib.Path:
 
     # Clean up
     archive_path.unlink(missing_ok=True)
+    shutil.rmtree(download_dir, ignore_errors=True)
 
     return me3_exe
 
@@ -224,7 +234,7 @@ def update_me3() -> str | None:
     """Update me3 if a newer version is available. Returns new version or None."""
     current = get_installed_me3_version()
     release = get_latest_me3_release()
-    latest = release["tag_name"].lstrip("v")
+    latest = release["tag_name"].removeprefix("v")
 
     if current and current == latest:
         return None

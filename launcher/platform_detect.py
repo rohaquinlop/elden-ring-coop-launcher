@@ -53,7 +53,7 @@ def find_elden_ring_dir() -> Optional[pathlib.Path]:
             # Manifest exists but game dir might be elsewhere
             try:
                 data = vdf.loads(manifest.read_text(encoding="utf-8"))
-                installdir = data.get("AppState", {}).installdir
+                installdir = data.get("AppState", {}).get("installdir")
                 if installdir:
                     candidate = lib / "common" / installdir
                     if candidate.is_dir() and (candidate / "Game" / "eldenring.exe").exists():
