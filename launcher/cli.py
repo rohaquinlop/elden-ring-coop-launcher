@@ -23,7 +23,9 @@ from .mod_manager import (
     ensure_mod_installed,
     get_installed_mod_version,
     get_latest_mod_release,
+    install_mod_from_file,
     update_mod,
+    update_mod_from_file,
 )
 from .platform_detect import PlatformInfo
 from .profile import create_default_profile
@@ -35,6 +37,29 @@ def _print_banner() -> None:
     print(f"  v{__version__}")
     print("=" * 50)
     print()
+
+
+def _install_or_update_mod_from_file(
+    mod_file: pathlib.Path, mod_dir: pathlib.Path, *, is_update: bool = False
+) -> int:
+    """Install or update mod from a local zip file.
+
+    Returns 0 on success, 1 on error.
+    """
+    if not mod_file.exists():
+        print(f"  ERROR: File not found: {mod_file}")
+        return 1
+
+    try:
+        if is_update:
+            update_mod_from_file(mod_file, mod_dir)
+        else:
+            install_mod_from_file(mod_file, mod_dir)
+        print(f"  Installed mod from: {mod_file.name}")
+        return 0
+    except Exception as e:
+        print(f"  ERROR installing mod: {e}")
+        return 1
 
 
 def cmd_setup(args: argparse.Namespace) -> int:
@@ -75,17 +100,24 @@ def cmd_setup(args: argparse.Namespace) -> int:
             return 1
     print()
 
-    # Step 3: Download mod
+    # Step 3: Install mod
     print("[3/5] Checking Seamless Co-op mod...")
     mod_dir = info.mod_dir
     if not mod_dir:
         print("  ERROR: Could not determine mod directory!")
         return 1
 
+    mod_file = getattr(args, "mod_file", None)
     dll_path = mod_dir / MOD_DLL
-    if dll_path.exists():
+
+    if dll_path.exists() and not mod_file:
         version = get_installed_mod_version(mod_dir) or "unknown"
         print(f"  Mod is already installed (v{version})")
+    elif mod_file:
+        print(f"  Installing mod from: {mod_file.name}")
+        ret = _install_or_update_mod_from_file(mod_file, mod_dir)
+        if ret != 0:
+            return ret
     else:
         print("  Downloading Seamless Co-op mod...")
         try:
@@ -102,7 +134,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     settings = load_settings(mod_dir)
     current_pw = settings.get_password()
     if current_pw:
-        print(f"  Password is already set: {'*' * len(current_pw)}")
+        print(f"  Password is already set: {current_pw}")
         change = input("  Change password? [y/N]: ").strip().lower()
         if change == "y":
             new_pw = input("  Enter new co-op password: ").strip()
@@ -133,9 +165,9 @@ def cmd_setup(args: argparse.Namespace) -> int:
     print("=" * 50)
     print("  Setup complete!")
     print()
-    print("  To launch the game: coop-launcher launch")
-    print("  To change password: coop-launcher config password <value>")
-    print("  To check status:    coop-launcher status")
+    print("  To launch the game: uv run coop-launcher launch")
+    print("  To change password: uv run coop-launcher config password <value>")
+    print("  To check status:    uv run coop-launcher status")
     print("=" * 50)
     return 0
 
@@ -183,7 +215,7 @@ def cmd_launch(args: argparse.Namespace) -> int:
     settings = load_settings(mod_dir)
     if not settings.get_password():
         print("WARNING: No co-op password set!")
-        print("  Set one with: coop-launcher config password <value>")
+        print("  Set one with: uv run coop-launcher config password <value>")
         print()
 
     # Launch
@@ -197,7 +229,8 @@ def cmd_launch(args: argparse.Namespace) -> int:
 def cmd_update(args: argparse.Namespace) -> int:
     """Update me3 and/or the mod."""
     _print_banner()
-    update_all = not args.me3 and not args.mod
+    mod_file = getattr(args, "mod_file", None)
+    update_all = not args.me3 and not args.mod and not mod_file
     exit_code = 0
 
     if args.me3 or update_all:
@@ -214,23 +247,27 @@ def cmd_update(args: argparse.Namespace) -> int:
             exit_code = 1
         print()
 
-    if args.mod or update_all:
-        print(">> Checking mod updates...")
+    if args.mod or mod_file or update_all:
+        print(">> Updating mod...")
         info = PlatformInfo()
         mod_dir = info.mod_dir
         if not mod_dir:
             print("  ERROR: Mod directory not found!")
             return 1
-        try:
-            result = update_mod(mod_dir)
-            if result:
-                print(f"  Updated Seamless Co-op to v{result}")
-            else:
-                version = get_installed_mod_version(mod_dir)
-                print(f"  Mod is up to date (v{version or 'unknown'})")
-        except Exception as e:
-            print(f"  ERROR updating mod: {e}")
-            exit_code = 1
+
+        if mod_file:
+            exit_code = _install_or_update_mod_from_file(mod_file, mod_dir, is_update=True)
+        else:
+            try:
+                result = update_mod(mod_dir)
+                if result:
+                    print(f"  Updated Seamless Co-op to v{result}")
+                else:
+                    version = get_installed_mod_version(mod_dir)
+                    print(f"  Mod is up to date (v{version or 'unknown'})")
+            except Exception as e:
+                print(f"  ERROR updating mod: {e}")
+                exit_code = 1
 
     return exit_code
 
@@ -289,7 +326,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         print(f">> Seamless Co-op: v{mod_ver or 'not installed'}")
         settings = load_settings(mod_dir)
         pw = settings.get_password()
-        print(f"   Password:       {'Set (' + '*' * len(pw) + ')' if pw else 'NOT SET'}")
+        print(f"   Password:       {'Set (' + pw + ')' if pw else 'NOT SET'}")
         print(f"   Settings file:  {mod_dir / MOD_SETTINGS}")
         print(f"   DLL present:    {(mod_dir / MOD_DLL).exists()}")
     else:
@@ -356,6 +393,10 @@ def main() -> int:
 
     # setup
     p_setup = sub.add_parser("setup", help="Interactive first-time setup wizard")
+    p_setup.add_argument(
+        "--mod-file", type=pathlib.Path, default=None,
+        help="Path to local mod zip file (e.g. downloaded from NexusMods)",
+    )
 
     # launch
     p_launch = sub.add_parser("launch", help="Launch game with Seamless Co-op")
@@ -364,11 +405,19 @@ def main() -> int:
     # run (setup + launch)
     p_run = sub.add_parser("run", help="Setup if needed, then launch")
     p_run.add_argument("--disable-arxan", action="store_true", help="Disable Arxan anti-tamper")
+    p_run.add_argument(
+        "--mod-file", type=pathlib.Path, default=None,
+        help="Path to local mod zip file (e.g. downloaded from NexusMods)",
+    )
 
     # update
     p_update = sub.add_parser("update", help="Update me3 and/or the mod")
     p_update.add_argument("--me3", action="store_true", help="Update me3 only")
     p_update.add_argument("--mod", action="store_true", help="Update mod only")
+    p_update.add_argument(
+        "--mod-file", type=pathlib.Path, default=None,
+        help="Path to local mod zip file to update from",
+    )
 
     # config
     p_config = sub.add_parser("config", help="Manage configuration")

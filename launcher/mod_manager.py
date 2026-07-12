@@ -74,23 +74,24 @@ def _find_release_asset(release: dict) -> dict | None:
     return None
 
 
-def download_mod(dest_dir: pathlib.Path) -> pathlib.Path:
-    """Download and extract the Seamless Co-op mod to dest_dir."""
-    release = get_latest_mod_release()
-    asset = _find_release_asset(release)
+def extract_mod(zip_path: pathlib.Path, dest_dir: pathlib.Path) -> pathlib.Path:
+    """Extract a mod zip file to dest_dir.
 
-    if not asset:
-        raise FileNotFoundError("Could not find mod download asset in release")
+    Handles SeamlessCoop/ subdir flattening and validates that ersc.dll is present.
 
-    # Download to temp
-    tmp_dir = pathlib.Path(tempfile.gettempdir()) / "ersc-mod"
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    zip_path = tmp_dir / asset["name"]
+    Args:
+        zip_path: Path to the mod zip file.
+        dest_dir: Destination directory (typically <game>/Game/SeamlessCoop/).
 
-    _download_file(asset["browser_download_url"], zip_path, "Downloading Seamless Co-op")
+    Returns:
+        The dest_dir path.
 
-    # Extract
+    Raises:
+        FileNotFoundError: If the zip doesn't contain ersc.dll.
+        zipfile.BadZipFile: If the file is not a valid zip.
+    """
     dest_dir.mkdir(parents=True, exist_ok=True)
+
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(dest_dir)
 
@@ -113,14 +114,52 @@ def download_mod(dest_dir: pathlib.Path) -> pathlib.Path:
         # Search for it in case the zip had a different structure
         found = list(dest_dir.rglob(MOD_DLL))
         if found:
-            # Move it to the expected location
             shutil.move(str(found[0]), str(dll_path))
         else:
             raise FileNotFoundError(
                 f"Mod DLL not found after extraction. Expected at: {dll_path}"
             )
 
-    # Write version file
+    return dest_dir
+
+
+def install_mod_from_file(zip_path: pathlib.Path, dest_dir: pathlib.Path) -> pathlib.Path:
+    """Install mod from a local zip file.
+
+    Args:
+        zip_path: Path to the downloaded mod zip (e.g. from NexusMods).
+        dest_dir: Destination directory (typically <game>/Game/SeamlessCoop/).
+
+    Returns:
+        The dest_dir path.
+    """
+    if not zip_path.exists():
+        raise FileNotFoundError(f"Mod file not found: {zip_path}")
+    if not zipfile.is_zipfile(zip_path):
+        raise ValueError(f"Not a valid zip file: {zip_path}")
+
+    return extract_mod(zip_path, dest_dir)
+
+
+def download_mod(dest_dir: pathlib.Path) -> pathlib.Path:
+    """Download and extract the Seamless Co-op mod to dest_dir."""
+    release = get_latest_mod_release()
+    asset = _find_release_asset(release)
+
+    if not asset:
+        raise FileNotFoundError("Could not find mod download asset in release")
+
+    # Download to temp
+    tmp_dir = pathlib.Path(tempfile.gettempdir()) / "ersc-mod"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = tmp_dir / asset["name"]
+
+    _download_file(asset["browser_download_url"], zip_path, "Downloading Seamless Co-op")
+
+    # Extract
+    extract_mod(zip_path, dest_dir)
+
+    # Write version file (only available when downloading from GitHub)
     version = release["tag_name"].removeprefix("v")
     (dest_dir / "VERSION").write_text(version, encoding="utf-8")
 
@@ -139,8 +178,43 @@ def ensure_mod_installed(mod_dir: pathlib.Path) -> pathlib.Path:
     return download_mod(mod_dir)
 
 
+def update_mod_from_file(zip_path: pathlib.Path, mod_dir: pathlib.Path) -> pathlib.Path:
+    """Update mod from a local zip file, preserving settings.
+
+    Args:
+        zip_path: Path to the downloaded mod zip.
+        mod_dir: Existing mod directory.
+
+    Returns:
+        The mod_dir path.
+    """
+    # Backup settings
+    settings_backup = None
+    settings_path = mod_dir / MOD_SETTINGS
+    if settings_path.exists():
+        settings_backup = settings_path.read_bytes()
+
+    # Remove old mod files (keep settings)
+    for item in mod_dir.iterdir():
+        if item.name == MOD_SETTINGS:
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
+
+    # Extract new version
+    extract_mod(zip_path, mod_dir)
+
+    # Restore settings if they were overwritten
+    if settings_backup and not settings_path.exists():
+        settings_path.write_bytes(settings_backup)
+
+    return mod_dir
+
+
 def update_mod(mod_dir: pathlib.Path) -> str | None:
-    """Update the mod if a newer version is available. Returns new version or None."""
+    """Update the mod from GitHub if a newer version is available. Returns new version or None."""
     current = get_installed_mod_version(mod_dir)
     release = get_latest_mod_release()
     latest = release["tag_name"].removeprefix("v")
@@ -148,12 +222,13 @@ def update_mod(mod_dir: pathlib.Path) -> str | None:
     if current and current == latest:
         return None
 
-    # Remove old mod files (keep settings)
+    # Backup settings
     settings_backup = None
     settings_path = mod_dir / MOD_SETTINGS
     if settings_path.exists():
         settings_backup = settings_path.read_bytes()
 
+    # Remove old mod files (keep settings)
     for item in mod_dir.iterdir():
         if item.name == MOD_SETTINGS:
             continue
